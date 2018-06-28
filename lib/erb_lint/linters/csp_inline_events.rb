@@ -33,13 +33,10 @@ module ERBLint
         parser.nodes_with_type(:tag).each do |tag_node|
           tag = BetterHtml::Tree::Tag.from_node(tag_node)
           next if tag.closing?
-
           
           inline_events.each do |event_name|
             event_attribute = tag.attributes[event_name]
 
-            # we know if these are present, we can't process them          
-            # type_present = type_attribute.present? && type_attribute.value_node.present?
             if event_attribute.present?
               name_node = tag_node.to_a[1]
 
@@ -63,7 +60,6 @@ module ERBLint
               )
             end
           end
-
         end
 
         # Process code within <% .. %> tags
@@ -82,9 +78,7 @@ module ERBLint
                 "Usage of inline event handlers #{inline_events.map{|e| '`'+ e +'`'}.join(',')} violates our Content Security Policy\n"\
                 "Remove the handler from the helper method and refactor code using `<%=javascript_tag .. %>`"
             )
-
           end
-          
       end
 
       def inline_events
