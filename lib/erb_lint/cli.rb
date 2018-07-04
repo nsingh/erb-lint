@@ -24,6 +24,63 @@ module ERBLint
       end
     end
 
+    class CheckStyleFormatter
+      def initialize()
+        @output = "<?xml version='1.0'?>\n".dup
+        @output << "<checkstyle>\n"
+      end
+
+      def start(report)
+      end
+      def process_file(report, filename, runner)
+        @output << sprintf("<file name='#{filename}'%s\n", runner.offenses.any? ? ">" : "/>")
+        runner.offenses.each do |offense|
+          @output << sprintf("  <error line='%d' message='%s'/>\n", offense.line_range.begin, offense.message)
+        end
+        @output << "</file>\n" if runner.offenses.any?
+      end
+
+      def end(report)
+        @output << "</checkstyle>\n"
+        open("checkstyle.xml", 'w') { |f| f.write @output }
+      end
+    end
+
+    class StdoutFormatter
+      def start(report); end
+      def end(report); end
+
+      def process_file(report, filename, runner)
+        runner.offenses.each do |offense|
+          puts <<~EOF
+            #{offense.message}#{' (not autocorrected)'.red if report.cli.send(:autocorrect?)}
+            In file: #{filename}:#{offense.line_range.begin}
+            
+          EOF
+        end
+      end
+    end
+
+    class Report
+      attr_accessor :formatter, :cli
+      def initialize(formatter, cli)
+        @formatter = formatter
+        @cli = cli
+      end
+
+      def start
+        formatter.start(self)
+      end
+
+      def end
+        formatter.end(self)
+      end
+
+      def process_file(filename, runner)
+        formatter.process_file(self, filename, runner)
+      end
+    end
+
     def initialize
       @options = {}
       @config = nil
@@ -50,10 +107,13 @@ module ERBLint
       puts "Linting #{lint_files.size} files with "\
         "#{enabled_linter_classes.size} #{'autocorrectable ' if autocorrect?}linters..."
       puts
-
+            
+      report = Report.new(formatter, self)
+      report.start
       lint_files.each do |filename|
         begin
-          run_with_corrections(filename)
+          runner = run_with_corrections(filename)
+          report.process_file(relative_filename(filename), runner)
         rescue => e
           puts "Exception occured when processing: #{relative_filename(filename)}"
           puts e.message
@@ -61,7 +121,9 @@ module ERBLint
           puts
         end
       end
-
+      report.end
+      # Report.new(run_list, formatter).output
+      
       if @stats.corrected > 0
         corrected_found_diff = @stats.found - @stats.corrected
         if corrected_found_diff > 0
@@ -118,13 +180,7 @@ module ERBLint
       end
 
       @stats.found += runner.offenses.size
-      runner.offenses.each do |offense|
-        puts <<~EOF
-          #{offense.message}#{' (not autocorrected)'.red if autocorrect?}
-          In file: #{relative_filename(filename)}:#{offense.line_range.begin}
-
-        EOF
-      end
+      runner      
     end
 
     def correct(processed_source, offenses)
@@ -135,6 +191,10 @@ module ERBLint
 
     def config_filename
       @config_filename ||= @options[:config] || DEFAULT_CONFIG_FILENAME
+    end
+
+    def formatter
+      @options[:formatter]
     end
 
     def load_config
@@ -229,6 +289,7 @@ module ERBLint
       )
     end
 
+    
     def option_parser
       OptionParser.new do |opts|
         opts.banner = "Usage: erblint [options] [file1, file2, ...]"
@@ -238,6 +299,18 @@ module ERBLint
             @options[:config] = config
           else
             failure!("#{config}: does not exist")
+          end
+        end
+        
+        opts.on("--formatter FORMATTER") do |formatter|
+          if ['checkstyle', 'stdout'].include?(formatter)
+            @options[:formatter] = 
+              case formatter
+              when 'stdout' then StdoutFormatter.new
+              when 'checkstyle' then CheckStyleFormatter.new
+              end
+          else
+            failure!("#{formatter}: does not exist")
           end
         end
 
