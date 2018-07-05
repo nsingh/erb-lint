@@ -44,7 +44,7 @@ module ERBLint
                 event_attribute.loc,
                 "#{@config.custom_message}\n"\
                 "Usage of `#{event_name}` event handler violates our Content Security Policy.\n"\
-                "Remove the `#{event_name}` handler and refactor code using `<%=javascript_tag .. %>`"
+                "Remove the `#{event_name}` handler and refactor code using `javascript_tag`"
               )
             end
           end
@@ -55,8 +55,8 @@ module ERBLint
               add_offense(
                 href_attribute.loc,
                 "#{@config.custom_message}\n"\
-                "Usage of javascript URLs in <a href=\"\"..></a> violates our Content Security Policy.\n"\
-                "Replace href=\"#{href_attribute.value}\" with href=\"#\" and refactor code using `<%=javascript_tag .. %> if necessary.`"
+                "Usage of javascript URLs in a href=\"\" violates our Content Security Policy.\n"\
+                "Replace href=\"#{href_attribute.value}\" with href=\"#\" and refactor code using `javascript_tag``"
               )
             end
           end
@@ -76,7 +76,7 @@ module ERBLint
                 code_node.loc,
                 "#{@config.custom_message}\n"\
                 "Usage of inline event handlers #{inline_events.map{|e| '`'+ e +'`'}.join(',')} violates our Content Security Policy\n"\
-                "Remove the handler from the helper method and refactor code using `<%=javascript_tag .. %>`"
+                "Remove the handler from the helper method and refactor code using `javascript_tag`"
             )
           end
       end

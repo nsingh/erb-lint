@@ -8,7 +8,7 @@ require 'psych'
 require 'yaml'
 require 'colorize'
 
-module ERBLint
+module ERBLint  
   class CLI
     DEFAULT_CONFIG_FILENAME = '.erb-lint.yml'
     DEFAULT_LINT_ALL_GLOB = "**/*.html{+*,}.erb"
@@ -35,7 +35,7 @@ module ERBLint
       def process_file(report, filename, runner)
         @output << sprintf("<file name='#{filename}'%s\n", runner.offenses.any? ? ">" : "/>")
         runner.offenses.each do |offense|
-          @output << sprintf("  <error line='%d' message='%s'/>\n", offense.line_range.begin, offense.message)
+          @output << sprintf("  <error line='%d' message='%s'/>\n", offense.line_range.begin, ERB::Util.html_escape_once(offense.message))
         end
         @output << "</file>\n" if runner.offenses.any?
       end
