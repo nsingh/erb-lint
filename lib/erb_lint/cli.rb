@@ -10,8 +10,8 @@ require 'colorize'
 
 module ERBLint  
   class CLI
-    DEFAULT_CONFIG_FILENAME = '.erb-lint.yml'
-    DEFAULT_LINT_ALL_GLOB = "**/*.html{+*,}.erb"
+    DEFAULT_CONFIG_FILENAME = '.erb-lint.yml'    
+    DEFAULT_LINT_ALL_GLOB = ["**/*.html{+*,}.erb", "**/*.jst"]
 
     class ExitWithFailure < RuntimeError; end
     class ExitWithSuccess < RuntimeError; end
@@ -194,7 +194,7 @@ module ERBLint
     end
 
     def formatter
-      @options[:formatter]
+      @options[:formatter] || StdoutFormatter.new
     end
 
     def load_config
@@ -220,8 +220,8 @@ module ERBLint
 
     def lint_files
       if @options[:lint_all]
-        pattern = File.expand_path(DEFAULT_LINT_ALL_GLOB, Dir.pwd)
-        Dir[pattern].select { |filename| !excluded?(filename) }
+        pattern = DEFAULT_LINT_ALL_GLOB.map{ |pattern| File.expand_path(pattern, Dir.pwd) }
+        Dir.glob(pattern).select { |filename| !excluded?(filename) }
       else
         @files
           .map { |f| f.include?('*') ? Dir[f] : f }

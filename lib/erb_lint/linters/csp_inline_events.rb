@@ -44,11 +44,11 @@ module ERBLint
                 event_attribute.loc,
                 "#{@config.custom_message}\n"\
                 "Usage of `#{event_name}` event handler violates our Content Security Policy.\n"\
-                "Remove the `#{event_name}` handler and refactor code using `javascript_tag`"
+                "Remove the `#{event_name}` handler and refactor code using `script` tag"
               )
             end
           end
-
+          
           if 'a' == tag.name
             href_attribute = tag.attributes['href']
             if href_attribute.present? && href_attribute.value =~ /javascript.*/
@@ -56,7 +56,7 @@ module ERBLint
                 href_attribute.loc,
                 "#{@config.custom_message}\n"\
                 "Usage of javascript URLs in a href=\"\" violates our Content Security Policy.\n"\
-                "Replace href=\"#{href_attribute.value}\" with href=\"#\" and refactor code using `javascript_tag``"
+                "Replace href=\"#{href_attribute.value}\" with href=\"#\" and refactor code using using `script` tag"
               )
             end
           end
